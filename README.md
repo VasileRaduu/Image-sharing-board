@@ -1,1 +1,1 @@
-# Image-sharing-board
+# Image-sharing-app
