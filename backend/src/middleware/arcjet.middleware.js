@@ -12,7 +12,7 @@ export const arcjetMiddleware = async (req, res, next) => {
 					error: "Too Many Requests",
 					message: "Rate limit exceeded. Please try again later.",
 				});
-			} else if (decision.reason.isBot) {
+			} else if (decision.reason.isBot()) {
 				return res.status(403).json({
 					error: "Bot access denied",
 					message: "Automated requests are not allowed.",
@@ -34,7 +34,14 @@ export const arcjetMiddleware = async (req, res, next) => {
 
 	next();
 	} catch (error) {
-		console.error("Arcjet middleware error:", error);
+		console.error("Arcjet middleware error:", {
+			error: error.message,
+			stack: error.stack,
+			url: req.url,
+			method: req.method,
+			ip: req.ip
+		});
+
 		next();
 	};
 };
