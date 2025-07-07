@@ -8,6 +8,10 @@ import Notification from "../models/notification.model.js";
 export const getComments = asyncHandler(async (req, res) => {
 	const { postId } = req.params;
 
+	if (!postId.match(/^[0-9a-fA-F]{24}$/)) {
+		return res.status(400).json({ error: "Invalid post ID" });
+	}
+	
 	const comments = await Comment.find({ post: postId })
 		.sort({ createdAt: -1 })
 		.populate("user", "username firstName lastName profilePicture");
@@ -16,11 +20,11 @@ export const getComments = asyncHandler(async (req, res) => {
 });
 
 export const createComment = asyncHandler(async (req, res) => {
-	const [ userId ] = getAuth(req);
-	const [ postId ] = req.params;
-	const [ content ] = req.body;
+	const { userId } = getAuth(req);
+	const { postId } = req.params;
+	const { content } = req.body;
 
-	if (!content || content.trim() == "") {
+	if (!content || content.trim() === "") {
 		return res.status(400).json({ error: "Comment content is required" });
 	}
 
@@ -60,7 +64,7 @@ export const deleteComment = asyncHandler(async (req, res) => {
 	const { commentId } = req.params;
 
 	const user = await User.findOne({ clerkId: userId });
-	const comment - await Comment.findById(commentId);
+	const comment = await Comment.findById(commentId);
 
 	if (!user || !comment) {
 		return res.status(404).json({ error: "User or comment not found" });
