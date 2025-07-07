@@ -1,6 +1,8 @@
 import asyncHandler from "express-async-handler";
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
+import Comment from "../models/comment.model.js";
+import Notification from "../models/notification.model.js";
 import { getAuth } from "@clerk/express";
 import cloudinary from "../config/cloudinary.js";
 
@@ -8,7 +10,7 @@ import cloudinary from "../config/cloudinary.js";
 export const getPosts = asyncHandler(async (req, res) => {
 	const posts = await Post.find()
 	.sort({ createdAt: -1 })
-	.populate("user", "username firstName lastName profilePicutre")
+	.populate("user", "username firstName lastName profilePicture")
 	.populate({
 		path: "comments",
 		populate: {
@@ -21,11 +23,11 @@ export const getPosts = asyncHandler(async (req, res) => {
 });
 
 
-export const getPosts = asyncHandler(async (req, res) => {
+export const getPost = asyncHandler(async (req, res) => {
 		const { postId } = req.params;
 
-		const posts = await Post.findById(postId)
-		.populate("user", "username firstName lastName profilePicutre")
+		const post = await Post.findById(postId)
+		.populate("user", "username firstName lastName profilePicture")
 		.populate({
 			path: "comments",
 			populate: {
@@ -36,8 +38,8 @@ export const getPosts = asyncHandler(async (req, res) => {
 	
 	if (!post) return res.status(404).json({ error: "Post not found "});
 
-	res.status(200).json({ posts });
-});
+	res.status(200).json({ post });
+ });
 
 export const getUserPosts = asyncHandler(async (req, res) => {
 	const { username } = req.params;
@@ -62,7 +64,7 @@ res.status(200).json({ posts });
 export const createPost = asyncHandler(async (req, res) => {
 	const { userId } = getAuth(req);
 	const { content } = req.body;
-	const imageFile = req.filter;
+	const imageFile = req.file;
 
 	if (!content && !imageFile) {
 		return res.status(400).json({ error: "Post must contain either text or image" });
@@ -77,12 +79,11 @@ export const createPost = asyncHandler(async (req, res) => {
 
 	if (imageFile) {
 		try {
-			const base64Image = `data:${imageFile.mimetype}:base64,${imageFile.buffer.toString("base64"
-			)}`;
+			const base64Image = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString("base64")}`;
 
 			const uploadResponse = await cloudinary.uploader.upload(base64Image, {
 				folder: "social_media_posts",
-				resourse_type: "image",
+				resource_type: "image",
 				transformation: [
 					{ width: 800, height: 600, crop: "limit" },
 					{ quality: "auto" },
@@ -157,7 +158,7 @@ export const deletePost = asyncHandler( async (req, res) => {
 	}
 //delete all comments on this post
 	await Comment.deleteMany({ post: postId });
-	
+
 //delete the post
 	await Post.findByIdAndDelete(postId);
 	
