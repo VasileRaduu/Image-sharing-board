@@ -1,8 +1,11 @@
 import { View, Text } from 'react-native'
+
 const MessagesScreen = () => {
-	<View>
-		<Text>MessagesScreen</Text>
-	</View>
-}
+		return (
+		 <View>
+			 <Text>MessagesScreen</Text>
+		 </View>
+		)
+	 }
 
 export default MessagesScreen

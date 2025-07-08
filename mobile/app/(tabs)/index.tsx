@@ -4,10 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 
 const HomeScreen = () => {
-	<SafeAreaView className='flex-1'>
-		<Text>HomeScreen</Text>
-		<SignOutButton />
-	</SafeAreaView>
-}
+		return (
+		 <SafeAreaView className='flex-1'>
+			 <Text>HomeScreen</Text>
+			 <SignOutButton />
+		 </SafeAreaView>
+		)
+	 }
 
 export default HomeScreen
