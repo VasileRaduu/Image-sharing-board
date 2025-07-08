@@ -4,18 +4,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 const TRENDING TOPICS = [
-	{ topic: "#ReactNative", tweets: "125k" }
-	{ topic: "#TypeScript", tweets: "89k" }
-	{ topic: "#WebDevelopment", tweets: "234k" }
-	{ topic: "#AI", tweets: "567k" }
-	{ topic: "#TechNews", tweets: "98k" }
+	{ topic: "#ReactNative", topics: "125k" }
+	{ topic: "#TypeScript", topics: "89k" }
+	{ topic: "#WebDevelopment", topics: "234k" }
+	{ topic: "#AI", topics: "567k" }
+	{ topic: "#TechNews", topics: "98k" }
 ];
 
 const SearchScreen = () => {
 	  return (
 			 <SafeAreaView className="flex-1 bg-white">
 				 <View className="px-4 py-3 border-b border-gray-100">
-					<View className="flex-row items-center bg-gray-100 rounder-full px-4 py-3">
+					<View className="flex-row items-center bg-gray-100 rounded-full px-4 py-3">
 						<Feather name="search" size={20} color="#657786" />
 						<TextInput
 						placeholder="Search Pixly"
