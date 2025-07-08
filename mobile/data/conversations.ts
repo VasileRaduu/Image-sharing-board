@@ -3,7 +3,6 @@ export type MessageType = {
   text: string;
   fromUser: boolean; // true if message is from current user, false if from other user
   timestamp: Date;
-  time: string;
 };
 
 export type ConversationType = {
@@ -15,7 +14,6 @@ export type ConversationType = {
     verified: boolean;
   };
   lastMessage: string;
-  time: string;
   timestamp: Date;
   messages: MessageType[];
 };
