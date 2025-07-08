@@ -3,12 +3,12 @@ import { View, Text, TextInput, ScrollView, TouchableOpacity } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
-const TRENDING TOPICS = [
-	{ topic: "#ReactNative", topics: "125k" }
-	{ topic: "#TypeScript", topics: "89k" }
-	{ topic: "#WebDevelopment", topics: "234k" }
-	{ topic: "#AI", topics: "567k" }
-	{ topic: "#TechNews", topics: "98k" }
+const TRENDING_TOPICS = [
+  { topic: "#ReactNative", tweets: "125k" },
+  { topic: "#TypeScript", tweets: "89k" },
+  { topic: "#WebDevelopment", tweets: "234k" },
+  { topic: "#AI", tweets: "567k" },
+  { topic: "#TechNews", tweets: "98k" },
 ];
 
 const SearchScreen = () => {
