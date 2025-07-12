@@ -23,34 +23,83 @@ export const updateProfile = asyncHandler(async (req, res) => {
 });
 
 export const syncUser = asyncHandler(async (req, res) => {
-  const { userId } = getAuth(req);
+  console.log("🔄 syncUser called");
+  
+  try {
+    // Step 1: Get user ID
+    const { userId } = getAuth(req);
+    console.log("✅ User ID extracted:", userId);
+    
+    if (!userId) {
+      console.error("❌ No userId found");
+      return res.status(401).json({ error: "No user ID found" });
+    }
 
-  // Check if user already exists in MongoDB
-  const existingUser = await User.findOne({ clerkId: userId });
-  if (existingUser) {
-    return res.status(200).json({ user: existingUser, message: "User already exists" });
+    // Step 2: Check database connection
+    console.log(" MongoDB connection state:", mongoose.connection.readyState);
+    if (mongoose.connection.readyState !== 1) {
+      console.error("❌ MongoDB not connected");
+      return res.status(500).json({ error: "Database not connected" });
+    }
+
+    // Step 3: Check for existing user
+    console.log("🔍 Checking for existing user...");
+    const existingUser = await User.findOne({ clerkId: userId });
+    if (existingUser) {
+      console.log("✅ User already exists:", existingUser._id);
+      return res.status(200).json({ user: existingUser, message: "User already exists" });
+    }
+
+    // Step 4: Get Clerk user data
+    console.log("📋 Fetching Clerk user data...");
+    const clerkUser = await clerkClient.users.getUser(userId);
+    console.log("✅ Clerk user data received:", {
+      id: clerkUser.id,
+      emailAddresses: clerkUser.emailAddresses?.length || 0,
+      firstName: clerkUser.firstName,
+      lastName: clerkUser.lastName
+    });
+
+    // Step 5: Validate email addresses
+    if (!clerkUser.emailAddresses || clerkUser.emailAddresses.length === 0) {
+      console.error("❌ No email addresses found");
+      return res.status(400).json({ error: "User has no email address" });
+    }
+
+    // Step 6: Prepare user data
+    const userData = {
+      clerkId: userId,
+      email: clerkUser.emailAddresses[0].emailAddress,
+      firstName: clerkUser.firstName || "",
+      lastName: clerkUser.lastName || "",
+      userName: clerkUser.emailAddresses[0].emailAddress.split("@")[0],
+      profilePicture: clerkUser.imageUrl || "",
+    };
+    console.log(" User data prepared:", userData);
+
+    // Step 7: Save to database
+    console.log("💾 Saving user to database...");
+    const user = await User.create(userData);
+    console.log("✅ User saved successfully:", user._id);
+
+    res.status(201).json({ user, message: "User created successfully" });
+    
+  } catch (error) {
+    console.error("❌ syncUser error:", error.message);
+    console.error("❌ Error stack:", error.stack);
+    console.error("❌ Error name:", error.name);
+    
+    // Handle specific errors
+    if (error.code === 11000) {
+      return res.status(409).json({ error: "User already exists" });
+    }
+    
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: "Validation failed", details: error.message });
+    }
+    
+    throw error;
   }
-
-  // Create new user from Clerk Data
-  const clerkUser = await clerkClient.users.getUser(userId);
-
-  // FIX: Check for emailAddresses existence and length
-  if (!clerkUser.emailAddresses || clerkUser.emailAddresses.length === 0) {
-    return res.status(400).json({ error: "User has no email address" });
-  }
-
-  const userData = {
-    clerkId: userId,
-    email: clerkUser.emailAddresses[0].emailAddress, // <-- Correct property
-    firstName: clerkUser.firstName || "",
-    lastName: clerkUser.lastName || "",
-    username: clerkUser.emailAddresses[0].emailAddress.split("@")[0],
-    profilePicture: clerkUser.imageUrl || "",
-  };
-
-  const user = await User.create(userData);
-
-  res.status(201).json({ user, message: "User created successfully" });
 });
 
 export const getCurrentUser = asyncHandler(async (req, res) => {
