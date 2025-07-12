@@ -1,7 +1,7 @@
 export type MessageType = {
   id: number;
   text: string;
-  fromUser: boolean; // true if message is from current user, false if from other user
+  fromUser: boolean; 
   timestamp: Date;
 };
 

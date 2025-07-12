@@ -44,7 +44,7 @@ const TabsLayout = () => {
 			 />
 	 
 			 <Tabs.Screen 
-			 name='notification'
+			 name='notifications'
 			 options={{
 				 title: "",
 				 tabBarIcon: ({color, size}) => <Feather name='bell' size={size} color={color} />,
