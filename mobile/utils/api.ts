@@ -1,7 +1,8 @@
 import axios, { AxiosInstance } from "axios";
 import { useAuth, useClerk } from "@clerk/clerk-expo";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "https://pixly-ashy.vercel.app/api";
+
 
 export const createApiClient = (getToken: () => Promise<string | null>): AxiosInstance => {
   const api = axios.create({ baseURL: API_BASE_URL });
