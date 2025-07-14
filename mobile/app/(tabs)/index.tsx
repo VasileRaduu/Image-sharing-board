@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 const HomeScreen = () => {
 	useUserSync();
+	
 		return (
 		 <SafeAreaView className='flex-1'>
 			 <Text>HomeScreen</Text>
