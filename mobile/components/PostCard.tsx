@@ -14,6 +14,7 @@ interface PostCardProps {
 
 
 const PostCard = ({ onDelete, onLike, post, isLiked, onComment, currentUser }: PostCardProps) => {
+  if (!post?.user || !currentUser) return null;
   const isOwnPost = post.user._id === currentUser._id;
 	
 	const handleDelete = () => {
