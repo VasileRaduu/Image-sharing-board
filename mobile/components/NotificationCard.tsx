@@ -51,12 +51,14 @@ const NotificationCard = ({ notification, onDelete }: NotificationCardProps) => 
     <View className="border-b border-gray-100 bg-white">
       <View className="flex-row p-4">
         <View className="relative mr-3">
-          <Image
+        <Image
             source={{ uri: notification.from.profilePicture }}
             className="size-12 rounded-full"
++           defaultSource={require('@/assets/default-avatar.png')}
++           onError={() => console.warn('Failed to load profile picture')}
           />
 
-          <View className="abolute -bottom-1 -right-1 size-6 bg-white items-center justify-center">
+          <View className="absolute -bottom-1 -right-1 size-6 bg-white items-center justify-center">
             {getNotificationIcon()}
           </View>
         </View>
