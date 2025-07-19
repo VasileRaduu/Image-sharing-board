@@ -14,7 +14,19 @@ export const useNotifications = () => {
   } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => api.get("/notifications"),
-    select: (res) => res.data.notifications,
+    select: (res) => {
+      // Handle the new standardized response format
+      if (res.data && res.data.data && res.data.data.notifications) {
+        // New format: { success: true, data: { data: { notifications: [...] } } }
+        return res.data.data.notifications;
+      } else if (res.data && res.data.notifications) {
+        // Old format: { notifications: [...] }
+        return res.data.notifications;
+      } else {
+        // Fallback
+        return res.data || [];
+      }
+    },
   });
 
   const deleteNotificationMutation = useMutation({

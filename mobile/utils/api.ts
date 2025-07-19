@@ -1,13 +1,20 @@
 import axios, { AxiosInstance } from "axios";
 import { useAuth, useClerk } from "@clerk/clerk-expo";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "https://pixly-ashy.vercel.app/api";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:5001/api";
 
+// Debug logging for development
+if (__DEV__) {
+  console.log("🔌 API Base URL:", API_BASE_URL);
+}
 
 export const createApiClient = (getToken: () => Promise<string | null>): AxiosInstance => {
   const api = axios.create({ 
     baseURL: API_BASE_URL,
-    timeout: 10000, // 10 second timeout
+    timeout: 15000, // 15 second timeout for local development
+    headers: {
+      'Content-Type': 'application/json',
+    },
   });
 
   api.interceptors.request.use(async (config) => {
@@ -15,22 +22,37 @@ export const createApiClient = (getToken: () => Promise<string | null>): AxiosIn
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Debug logging for development
+    if (__DEV__) {
+      console.log("🚀 API Request:", config.method?.toUpperCase(), config.url);
+      console.log("🔑 Auth Token:", token ? "Present" : "Missing");
+    }
+    
     return config;
   });
 
   // Response interceptor for better error handling
   api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      if (__DEV__) {
+        console.log("✅ API Response:", response.status, response.config.url);
+      }
+      return response;
+    },
     (error) => {
       if (error.response) {
         // Server responded with error status
-        console.error('API Error:', error.response.status, error.response.data);
+        console.error('❌ API Error:', error.response.status, error.response.data);
+        console.error('📡 URL:', error.config?.url);
+        console.error('🔑 Headers:', error.config?.headers);
       } else if (error.request) {
         // Network error
-        console.error('Network Error:', error.message);
+        console.error('🌐 Network Error:', error.message);
+        console.error('📡 URL:', error.config?.url);
       } else {
         // Other error
-        console.error('Request Error:', error.message);
+        console.error('⚠️ Request Error:', error.message);
       }
       return Promise.reject(error);
     }

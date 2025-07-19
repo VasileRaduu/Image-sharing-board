@@ -1,12 +1,13 @@
 import PostComposer from '@/components/PostComposer'
-import PostList from '@/components/PostsList'
+import PostsList from '@/components/PostsList'
 import SignOutButton from '@/components/SignOutButton'
 import { usePosts } from '@/hooks/usePosts'
 import { useUserSync } from '@/hooks/useUserSync'
-import { Ionicons } from '@expo/vector-icons'
 import { useState } from 'react'
-import { RefreshControl, ScrollView, Text, View } from 'react-native'
+import { RefreshControl, ScrollView, View, Text } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+import OfflineIndicator from '@/components/OfflineIndicator'
 
 
 const HomeScreen = () => { 
@@ -24,28 +25,29 @@ const HomeScreen = () => {
 	useUserSync();
 	
 		return (
-		 <SafeAreaView className='flex-1 bg-white'>
-			<View className='flex-row justify-between items-center px-4 py-3 border-b border-gray-100'>
-				<Ionicons name='logo-vue' size={24} color='#1DA1F2' />
-				<Text className='text-xl font-bold text-gray-900'>Home</Text>
+		 <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+			<OfflineIndicator />
+			<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
+				<Text style={{ fontSize: 20, fontWeight: '700' as const, color: '#111827' }}>
+					Home
+				</Text>
 				<SignOutButton />
 			</View>
 
 			<ScrollView
 				showsVerticalScrollIndicator={false}
-				className='flex-1'
-				contentContainerStyle={{paddingBottom: 80}}
-
+				style={{ flex: 1 }}
+				contentContainerStyle={{ paddingBottom: 80 }}
 				refreshControl={
 					<RefreshControl
-					refreshing={isRefetching}
-					onRefresh={handlePullToRefresh}
-					tintColor={"#1DA1F2"}
+						refreshing={isRefetching}
+						onRefresh={handlePullToRefresh}
+						tintColor="#3b82f6"
 					/>
 				}
 			>
 				<PostComposer />
-				<PostList />
+				<PostsList />
 			</ScrollView>
 		 </SafeAreaView>
 		)

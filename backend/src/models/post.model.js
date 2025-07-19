@@ -31,6 +31,12 @@ const postSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Create indexes for better query performance
+postSchema.index({ user: 1, createdAt: -1 }); // For user posts queries
+postSchema.index({ createdAt: -1 }); // For general posts queries
+postSchema.index({ content: 'text' }); // For text search
+postSchema.index({ likes: 1 }); // For like queries
+
 const Post = mongoose.model("Post", postSchema);
 
 export default Post;

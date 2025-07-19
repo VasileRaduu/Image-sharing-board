@@ -2,12 +2,17 @@ import asyncHandler from "express-async-handler";
 import mongoose from "mongoose";
 import User from "../models/user.model.js";
 import Notification from "../models/notification.model.js";
+import { ApiResponse } from "../utils/responseHelper.js";
+import cloudinary from "../config/cloudinary.js";
 
 import { clerkClient, getAuth } from "@clerk/express";
 
 export const getUserProfile = asyncHandler(async (req, res) => {
 	const { username } = req.params;
-	const user = await User.findOne({ username });
+	const user = await User.findOne({ userName: username })
+		.populate("followers", "userName firstName lastName profilePicture")
+		.populate("following", "userName firstName lastName profilePicture");
+	
 	if (!user) return res.status(404).json({ error: "User not found" });
 
 	res.status(200).json({ user });
@@ -21,6 +26,88 @@ export const updateProfile = asyncHandler(async (req, res) => {
 	if (!user) return res.status(404).json({ error: "User not found" });
 
 	res.status(200).json({ user });
+});
+
+export const uploadProfileImage = asyncHandler(async (req, res) => {
+	const { userId } = getAuth(req);
+	const imageFile = req.file;
+
+	if (!imageFile) {
+		return res.status(400).json({ error: "No image file provided" });
+	}
+
+	try {
+		const base64Image = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString("base64")}`;
+
+		const uploadResponse = await cloudinary.uploader.upload(base64Image, {
+			folder: "profile_images",
+			resource_type: "image",
+			transformation: [
+				{ width: 400, height: 400, crop: "fill", gravity: "face" },
+				{ quality: "auto" },
+				{ format: "auto" },
+			],
+		});
+
+		const user = await User.findOneAndUpdate(
+			{ clerkId: userId },
+			{ profilePicture: uploadResponse.secure_url },
+			{ new: true }
+		);
+
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		ApiResponse.success(res, { 
+			message: "Profile image updated successfully",
+			profilePicture: uploadResponse.secure_url 
+		});
+	} catch (error) {
+		console.error("Error uploading profile image:", error);
+		ApiResponse.internalError(res, "Failed to upload profile image");
+	}
+});
+
+export const uploadBannerImage = asyncHandler(async (req, res) => {
+	const { userId } = getAuth(req);
+	const imageFile = req.file;
+
+	if (!imageFile) {
+		return res.status(400).json({ error: "No image file provided" });
+	}
+
+	try {
+		const base64Image = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString("base64")}`;
+
+		const uploadResponse = await cloudinary.uploader.upload(base64Image, {
+			folder: "banner_images",
+			resource_type: "image",
+			transformation: [
+				{ width: 1200, height: 400, crop: "fill" },
+				{ quality: "auto" },
+				{ format: "auto" },
+			],
+		});
+
+		const user = await User.findOneAndUpdate(
+			{ clerkId: userId },
+			{ bannerImage: uploadResponse.secure_url },
+			{ new: true }
+		);
+
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		ApiResponse.success(res, { 
+			message: "Banner image updated successfully",
+			bannerImage: uploadResponse.secure_url 
+		});
+	} catch (error) {
+		console.error("Error uploading banner image:", error);
+		ApiResponse.internalError(res, "Failed to upload banner image");
+	}
 });
 
 export const syncUser = asyncHandler(async (req, res) => {
@@ -116,41 +203,102 @@ export const followUser = asyncHandler(async (req, res) => {
   const { userId } = getAuth(req);
   const { targetUserId } = req.params;
 
-  if (userId === targetUserId) return res.status(400).json({ error: "You cannot follow yourself" });
+  if (userId === targetUserId) {
+    return res.status(400).json({ error: "You cannot follow yourself" });
+  }
 
   const currentUser = await User.findOne({ clerkId: userId });
   const targetUser = await User.findById(targetUserId);
 
-  if (!currentUser || !targetUser) return res.status(404).json({ error: "User not found" });
+  if (!currentUser || !targetUser) {
+    return res.status(404).json({ error: "User not found" });
+  }
 
-  const isFollowing = currentUser.following.includes(targetUserId);
+  const isFollowing = currentUser.following.includes(targetUser._id);
 
   if (isFollowing) {
     // unfollow
     await User.findByIdAndUpdate(currentUser._id, {
-      $pull: { following: targetUserId },
+      $pull: { following: targetUser._id },
     });
-    await User.findByIdAndUpdate(targetUserId, {
+    await User.findByIdAndUpdate(targetUser._id, {
       $pull: { followers: currentUser._id },
+    });
+
+    // Remove notification if exists
+    await Notification.findOneAndDelete({
+      from: currentUser._id,
+      to: targetUser._id,
+      type: "follow",
+    });
+
+    ApiResponse.success(res, { 
+      message: "User unfollowed successfully",
+      isFollowing: false 
     });
   } else {
     // follow
     await User.findByIdAndUpdate(currentUser._id, {
-      $push: { following: targetUserId },
+      $push: { following: targetUser._id },
     });
-    await User.findByIdAndUpdate(targetUserId, {
+    await User.findByIdAndUpdate(targetUser._id, {
       $push: { followers: currentUser._id },
     });
 
     // create notification
     await Notification.create({
       from: currentUser._id,
-      to: targetUserId,
+      to: targetUser._id,
       type: "follow",
     });
+
+    ApiResponse.success(res, { 
+      message: "User followed successfully",
+      isFollowing: true 
+    });
+  }
+});
+
+export const getFollowers = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  
+  const user = await User.findById(userId)
+    .populate("followers", "userName firstName lastName profilePicture")
+    .select("followers");
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
   }
 
-  res.status(200).json({
-    message: isFollowing ? "User unfollowed successfully" : "User followed successfully",
-  });
+  ApiResponse.success(res, { followers: user.followers });
+});
+
+export const getFollowing = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  
+  const user = await User.findById(userId)
+    .populate("following", "userName firstName lastName profilePicture")
+    .select("following");
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  ApiResponse.success(res, { following: user.following });
+});
+
+export const checkFollowStatus = asyncHandler(async (req, res) => {
+  const { userId } = getAuth(req);
+  const { targetUserId } = req.params;
+
+  const currentUser = await User.findOne({ clerkId: userId });
+  const targetUser = await User.findById(targetUserId);
+
+  if (!currentUser || !targetUser) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  const isFollowing = currentUser.following.includes(targetUser._id);
+
+  ApiResponse.success(res, { isFollowing });
 });

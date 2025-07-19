@@ -1,9 +1,16 @@
 export interface User {
   _id: string;
-  username: string;
+  userName: string;
   firstName: string;
   lastName: string;
   profilePicture?: string;
+  bannerImage?: string;
+  bio?: string;
+  location?: string;
+  followers?: User[];
+  following?: User[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Comment {
@@ -26,7 +33,7 @@ export interface Post {
 export interface Notification {
   _id: string;
   from: {
-    username: string;
+    userName: string;
     firstName: string;
     lastName: string;
     profilePicture?: string;
@@ -43,4 +50,26 @@ export interface Notification {
     content: string;
   };
   createdAt: string;
+}
+
+export interface Message {
+  _id: string;
+  conversationId: string;
+  sender: User;
+  receiver: User;
+  content: string;
+  messageType: "text" | "image";
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export interface Conversation {
+  _id: string;
+  participants: User[];
+  lastMessage?: Message;
+  lastMessageAt: string;
+  unreadCount: Map<string, number>;
+  createdAt: string;
+  updatedAt: string;
 }

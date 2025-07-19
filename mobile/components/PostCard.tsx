@@ -1,7 +1,11 @@
 import { Post, User } from '@/types'
 import { formatDate, formatNumber } from '@/utils/formatters';
-import { AntDesign, Feather } from '@expo/vector-icons';
-import { View, Text, Alert, Image, TouchableOpacity } from 'react-native'
+import { AntDesign, Feather, Ionicons } from '@expo/vector-icons';
+import { View, Text, Alert, Image, TouchableOpacity, Animated } from 'react-native'
+import { useState, useRef } from 'react';
+import { colors, spacing, borderRadius, shadows } from '../utils/designSystem';
+import Avatar from './ui/Avatar';
+import Button from './ui/Button';
 
 interface PostCardProps {
 	post: Post;
@@ -14,6 +18,9 @@ interface PostCardProps {
 
 
 const PostCard = ({ onDelete, onLike, post, isLiked, onComment, currentUser }: PostCardProps) => {
+  const [isLikedState, setIsLikedState] = useState(isLiked);
+  const likeScale = useRef(new Animated.Value(1)).current;
+  
   if (!post?.user || !currentUser) return null;
   const isOwnPost = post.user._id === currentUser._id;
 	
@@ -27,74 +34,152 @@ const PostCard = ({ onDelete, onLike, post, isLiked, onComment, currentUser }: P
 		]);
 	};
 
+  const handleLike = () => {
+    setIsLikedState(!isLikedState);
+    
+    // Animate like button
+    Animated.sequence([
+      Animated.timing(likeScale, {
+        toValue: 1.3,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(likeScale, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    onLike(post._id);
+  };
+
 
 		return (
-		 <View className='border-b border-gray-100 bg-white'>
-		 	<View className='flex-row p-4'>
-				<Image 
-					source={{ uri: post.user.profilePicture || "" }}
-					className="w-12 h-12 rounded-full mr-3"
+		 <View style={{
+       backgroundColor: colors.neutral[50],
+       borderBottomWidth: 1,
+       borderBottomColor: colors.neutral[200],
+       paddingVertical: spacing.md,
+     }}>
+		 	<View style={{ paddingHorizontal: spacing.md }}>
+				<View style={{ flexDirection: 'row', marginBottom: spacing.sm }}>
+					<Avatar 
+						source={post.user.profilePicture}
+						size="md"
+						fallback={`${post.user.firstName} ${post.user.lastName}`}
+						style={{ marginRight: spacing.sm }}
 					/>
-					<View className='flex-1'>
-						<View className='flex-row items-center justify-between mb-1'>
-							<View className='flex-row items-center'>
-							<Text className='font-bold text-gray-900 mr-1'>
-								{post.user.firstName} {post.user.lastName}
-							</Text>
-							<Text className='text-gray-500 ml-1'>
-								@{post.user.username} · {formatDate(post.createdAt)}
-							</Text>
+					<View style={{ flex: 1 }}>
+						<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+							<View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+								<Text style={{ 
+                  fontWeight: '600' as const, 
+                  color: colors.neutral[900], 
+                  fontSize: 16,
+                  marginRight: spacing.xs 
+                }}>
+									{post.user.firstName} {post.user.lastName}
+								</Text>
+								<Text style={{ 
+                  color: colors.neutral[500], 
+                  fontSize: 14 
+                }}>
+									@{post.user.userName} · {formatDate(post.createdAt)}
+								</Text>
 							</View>
 							{isOwnPost && (
-								<TouchableOpacity onPress={handleDelete}>
-									<Feather name='trash' size={20} color="#657786" />
+								<TouchableOpacity 
+                  onPress={handleDelete}
+                  style={{ padding: spacing.xs }}
+                >
+									<Ionicons name='ellipsis-horizontal' size={20} color={colors.neutral[500]} />
 								</TouchableOpacity>
 							)}
 						</View>
 
 						{post.content && (
-							<Text className='text-gray-900 text-base leading-5 mb-3'>
+							<Text style={{ 
+                color: colors.neutral[900], 
+                fontSize: 16, 
+                lineHeight: 24, 
+                marginBottom: spacing.md 
+              }}>
 								{post.content}
 							</Text>
 						)}
 
 						{post.image && (
-							<Image
-							source={{ uri: post.image }}
-							className='w-full h-48 rounded-2xl mb-3'
-							resizeMode='cover'
-							/>
+							<View style={{ 
+                borderRadius: borderRadius.lg, 
+                overflow: 'hidden', 
+                marginBottom: spacing.md,
+                ...shadows.sm 
+              }}>
+								<Image
+									source={{ uri: post.image }}
+									style={{ width: '100%', height: 200 }}
+									resizeMode='cover'
+								/>
+							</View>
 						)}
 
-						<View className='flex-row justify-between max-w-xs'>
-							<TouchableOpacity className='flex-row items-center' onPress={() => onComment(post)}>
-								<Feather name='message-circle' size={18} color="#657786" />
-								<Text className='text-gray-500 text-sm ml-2'>
-								{formatNumber(post.comments?.length || 0)}
+						<View style={{ 
+          flexDirection: 'row', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          paddingTop: spacing.sm,
+          borderTopWidth: 1,
+          borderTopColor: colors.neutral[200]
+        }}>
+							<TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center' }} 
+                onPress={() => onComment(post)}
+              >
+								<Ionicons name='chatbubble-outline' size={20} color={colors.neutral[500]} />
+								<Text style={{ 
+                  color: colors.neutral[500], 
+                  fontSize: 14, 
+                  marginLeft: spacing.xs 
+                }}>
+									{formatNumber(post.comments?.length || 0)}
 								</Text>
 							</TouchableOpacity>
 
-							<TouchableOpacity className='flex-row items-center'>
-								<Feather name='repeat' size={18} color="#657786" />
-								<Text className='text-gray-500 text-sm ml-2'>0</Text>
+							<TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
+								<Ionicons name='repeat-outline' size={20} color={colors.neutral[500]} />
+								<Text style={{ 
+                  color: colors.neutral[500], 
+                  fontSize: 14, 
+                  marginLeft: spacing.xs 
+                }}>0</Text>
 							</TouchableOpacity>
 
-							<TouchableOpacity className='flex-row items-center' onPress={() => onLike(post._id)}>
-								{isLiked ? (
-									<AntDesign name='heart' size={18} color="#E0245E" />
-								) : (
-									<Feather name='heart' size={18} color="#657786" />
-								)}
-								<Text className={`text-sm ml-2 ${isLiked ? "text-red-500" : "text-gray-500"}`}>
-									{formatNumber(post.likes?.length || 0)}
-								</Text>
-							</TouchableOpacity>
+							<Animated.View style={{ transform: [{ scale: likeScale }] }}>
+								<TouchableOpacity 
+                  style={{ flexDirection: 'row', alignItems: 'center' }} 
+                  onPress={handleLike}
+                >
+									{isLikedState ? (
+										<AntDesign name='heart' size={20} color={colors.error[500]} />
+									) : (
+										<Ionicons name='heart-outline' size={20} color={colors.neutral[500]} />
+									)}
+									<Text style={{ 
+                    fontSize: 14, 
+                    marginLeft: spacing.xs,
+                    color: isLikedState ? colors.error[500] : colors.neutral[500]
+                  }}>
+										{formatNumber(post.likes?.length || 0)}
+									</Text>
+								</TouchableOpacity>
+							</Animated.View>
 
-							<TouchableOpacity>
-								<Feather name='share' size={18} color="#657786" />
+							<TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
+								<Ionicons name='share-outline' size={20} color={colors.neutral[500]} />
 							</TouchableOpacity>
-
 						</View>
+					</View>
 				</View>
 			</View>
 		 </View>

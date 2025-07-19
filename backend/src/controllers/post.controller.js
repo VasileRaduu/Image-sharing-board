@@ -1,166 +1,109 @@
 import asyncHandler from "express-async-handler";
-import Post from "../models/post.model.js";
-import User from "../models/user.model.js";
-import Comment from "../models/comment.model.js";
-import Notification from "../models/notification.model.js";
 import { getAuth } from "@clerk/express";
-import cloudinary from "../config/cloudinary.js";
-
+import { PostService } from "../services/post.service.js";
+import { ApiResponse, createPaginationResponse } from "../utils/responseHelper.js";
 
 export const getPosts = asyncHandler(async (req, res) => {
-	const posts = await Post.find()
-	.sort({ createdAt: -1 })
-	.populate("user", "username firstName lastName profilePicture")
-	.populate({
-		path: "comments",
-		populate: {
-			path: "user",
-			select: "username firstName lastName profilePicture",
-		},
-	});
-
-	res.status(200).json({ posts });
+	try {
+		const { page = 1, limit = 10 } = req.query;
+		const { posts, totalPosts } = await PostService.getPosts(page, limit);
+		
+		const response = createPaginationResponse(posts, page, limit, totalPosts);
+		ApiResponse.success(res, response);
+	} catch (error) {
+		console.error("Error fetching posts:", error);
+		ApiResponse.internalError(res, "Failed to fetch posts");
+	}
 });
 
 
 export const getPost = asyncHandler(async (req, res) => {
+	try {
 		const { postId } = req.params;
-
-		const post = await Post.findById(postId)
-		.populate("user", "username firstName lastName profilePicture")
-		.populate({
-			path: "comments",
-			populate: {
-				path: "user",
-				select: "username firstName lastName profilePicture",
-			},
-		});
-	
-	if (!post) return res.status(404).json({ error: "Post not found "});
-
-	res.status(200).json({ post });
+		const post = await PostService.getPost(postId);
+		ApiResponse.success(res, { post });
+	} catch (error) {
+		console.error("Error fetching post:", error);
+		if (error.message === 'Invalid post ID format') {
+			ApiResponse.badRequest(res, error.message);
+		} else if (error.message === 'Post not found') {
+			ApiResponse.notFound(res, error.message);
+		} else {
+			ApiResponse.internalError(res, "Failed to fetch post");
+		}
+	}
  });
 
 export const getUserPosts = asyncHandler(async (req, res) => {
-	const { username } = req.params;
-
-	const user = await User.findOne({ username });
-	if (!user) return res.status(404).json({ error: "User not found "});
-
-	const posts = await Post.find({ user: user._id })
-	.sort({ createdAt: -1 })
-	.populate("user", "username firstName lastName profilePicture")
-	.populate({
-		path: "comments",
-		populate: {
-			path: "user",
-			select: "username firstName lastName profilePicture",
-		},
-	});
-	
-res.status(200).json({ posts });
+	try {
+		const { username } = req.params;
+		const posts = await PostService.getUserPosts(username);
+		ApiResponse.success(res, { posts });
+	} catch (error) {
+		console.error("Error fetching user posts:", error);
+		if (error.message === 'User not found') {
+			ApiResponse.notFound(res, error.message);
+		} else {
+			ApiResponse.internalError(res, "Failed to fetch user posts");
+		}
+	}
 });
 
 export const createPost = asyncHandler(async (req, res) => {
-	const { userId } = getAuth(req);
-	const { content } = req.body;
-	const imageFile = req.file;
+	try {
+		const { userId } = getAuth(req);
+		const { content } = req.body;
+		const imageFile = req.file;
 
-	if (!content && !imageFile) {
-		return res.status(400).json({ error: "Post must contain either text or image" });
-	}
-
-	const user = await User.findOne({ clerkId: userId });
-	if (!user) return res.status(404).json({ error: "User not found" });
-
-	let imageUrl = "";
-
-//upload image from cloudinary if provided
-
-	if (imageFile) {
-		try {
-			const base64Image = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString("base64")}`;
-
-			const uploadResponse = await cloudinary.uploader.upload(base64Image, {
-				folder: "social_media_posts",
-				resource_type: "image",
-				transformation: [
-					{ width: 800, height: 600, crop: "limit" },
-					{ quality: "auto" },
-					{ format: "auto" },
-				],
-			});
-			imageUrl = uploadResponse.secure_url;
-		} catch (uploadError) {
-			console.error("Cloudinary upload error:", uploadError);
-			return res.status(400).json({ error: "Failed to upload image" });
+		const post = await PostService.createPost(userId, content, imageFile);
+		ApiResponse.created(res, { post });
+	} catch (error) {
+		console.error("Error creating post:", error);
+		if (error.message === 'Post must contain either text or image') {
+			ApiResponse.badRequest(res, error.message);
+		} else if (error.message === 'User not found') {
+			ApiResponse.notFound(res, error.message);
+		} else if (error.message === 'Failed to upload image') {
+			ApiResponse.badRequest(res, error.message);
+		} else {
+			ApiResponse.internalError(res, "Failed to create post");
 		}
 	}
-
-	const post = await Post.create({
-		user: user._id,
-		content: content || "",
-		image: imageUrl,
-	});
-
-	res.status(201).json({ post });
 });
 
 export const likePost = asyncHandler(async (req, res) => {
-	const { userId } = getAuth(req);
-	const { postId } = req.params;
+	try {
+		const { userId } = getAuth(req);
+		const { postId } = req.params;
 
-	const user = await User.findOne({ clerkId: userId });
-	const post = await Post.findById(postId);
-
-	if (!user || !post) return res.status(404).json({ error: "User or post not found" });
-
-
-	const isLiked = post.likes.includes(user._id);
-
-			if (isLiked) {
-	// unlike
-			await Post.findByIdAndUpdate(postId, {
-				$pull: { likes: user._id },
-			});
+		const result = await PostService.likePost(userId, postId);
+		const message = result.isLiked ? "Post liked successfully" : "Post unliked successfully";
+		ApiResponse.success(res, { message });
+	} catch (error) {
+		console.error("Error liking/unliking post:", error);
+		if (error.message === 'User or post not found') {
+			ApiResponse.notFound(res, error.message);
 		} else {
-	// like
-			await Post.findByIdAndUpdate(postId, {
-				$push: { likes: user._id },
-			});
-
-	// notification if it's not our post
-		if (post.user.toString() !== user._id.toString()) {
-			await Notification.create({
-				from: user._id,
-				to: post.user,
-				type: "like",
-				post: postId,
-			});
+			ApiResponse.internalError(res, "Failed to like/unlike post");
 		}
 	}
-	res.status(200).json({
-		message: isLiked ? "Post unliked successfully" : "Post liked successfully",
-	});
 });
 
-export const deletePost = asyncHandler( async (req, res) => {
-	const { userId } = getAuth(req);
-	const { postId } = req.params;
+export const deletePost = asyncHandler(async (req, res) => {
+	try {
+		const { userId } = getAuth(req);
+		const { postId } = req.params;
 
-	const user = await User.findOne({ clerkId: userId });
-	const post = await Post.findById(postId);
-
-	if (!user || !post) return res.status(400).json({ error: "User or post not found" });
-
-	if (post.user.toString() !== user._id.toString()) {
-		return res.status(403).json({ error: "You can only delete your own posts" });
+		await PostService.deletePost(userId, postId);
+		ApiResponse.success(res, { message: "Post deleted successfully" });
+	} catch (error) {
+		console.error("Error deleting post:", error);
+		if (error.message === 'User or post not found') {
+			ApiResponse.badRequest(res, error.message);
+		} else if (error.message === 'You can only delete your own posts') {
+			ApiResponse.forbidden(res, error.message);
+		} else {
+			ApiResponse.internalError(res, "Failed to delete post");
+		}
 	}
-//delete all comments on this post
-	await Comment.deleteMany({ post: postId });
-
-//delete the post
-	await Post.findByIdAndDelete(postId);
-	
-	res.status(200).json({ message: "Post deleted successfully" });
 });

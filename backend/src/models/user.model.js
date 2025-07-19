@@ -58,6 +58,11 @@ const userSchema = new mongoose.Schema(
 	{ timestamps: true}
 );
 
+// Create indexes for better query performance
+userSchema.index({ firstName: 1, lastName: 1 }); // For name searches
+userSchema.index({ followers: 1 }); // For follower queries
+userSchema.index({ following: 1 }); // For following queries
+
 const User = mongoose.model("User", userSchema);
 
 export default User;

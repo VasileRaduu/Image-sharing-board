@@ -27,6 +27,11 @@ const commentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Create indexes for better query performance
+commentSchema.index({ post: 1, createdAt: -1 }); // For post comments queries
+commentSchema.index({ user: 1, createdAt: -1 }); // For user comments queries
+commentSchema.index({ content: 'text' }); // For text search
+
 const Comment = mongoose.model("Comment", commentSchema);
 
 export default Comment;

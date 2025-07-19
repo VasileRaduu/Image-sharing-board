@@ -14,7 +14,10 @@ const PostsList = ({ username }: { username?: string }) => {
     usePosts(username);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
-  const selectedPost = selectedPostId ? posts.find((p: Post) => p._id === selectedPostId) : null;
+  // Ensure posts is always an array
+  const safePosts = Array.isArray(posts) ? posts : [];
+  
+  const selectedPost = selectedPostId ? safePosts.find((p: Post) => p._id === selectedPostId) : null;
 
   if (isLoading) {
     return <LoadingState message="Loading posts..." />;
@@ -29,7 +32,7 @@ const PostsList = ({ username }: { username?: string }) => {
     );
   }
 
-  if (posts.length === 0) {
+  if (safePosts.length === 0) {
     return (
       <View className="p-8 items-center">
         <Text className="text-gray-500">No posts yet</Text>
@@ -39,7 +42,7 @@ const PostsList = ({ username }: { username?: string }) => {
 
   return (
     <>
-      {posts.map((post: Post) => (
+      {safePosts.map((post: Post) => (
         <PostCard
           key={post._id}
           post={post}

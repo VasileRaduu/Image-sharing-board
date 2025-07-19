@@ -3,6 +3,8 @@ import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { User } from '../types';
 import { formatNumber } from '../utils/formatters';
+import FollowButton from './FollowButton';
+import { useFollowers, useFollowing } from '../hooks/useFollow';
 
 interface UserProfileProps {
   user: User;
@@ -17,6 +19,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
   onSignOut,
   isOwnProfile = false,
 }) => {
+  const { followers } = useFollowers(user._id);
+  const { following } = useFollowing(user._id);
+
   return (
     <ScrollView className="flex-1 bg-white">
       {/* Header */}
@@ -42,14 +47,18 @@ const UserProfile: React.FC<UserProfileProps> = ({
             <Text className="text-xl font-bold text-gray-900">
               {user.firstName} {user.lastName}
             </Text>
-            <Text className="text-gray-600 text-base">@{user.username}</Text>
-            {isOwnProfile && (
+            <Text className="text-gray-600 text-base">@{user.userName}</Text>
+            {isOwnProfile ? (
               <TouchableOpacity
                 className="bg-blue-500 px-4 py-2 rounded-full mt-2 self-start"
                 onPress={onEditProfile}
               >
                 <Text className="text-white font-semibold">Edit Profile</Text>
               </TouchableOpacity>
+            ) : (
+              <View className="mt-2">
+                <FollowButton targetUserId={user._id} size="medium" />
+              </View>
             )}
           </View>
         </View>
@@ -61,11 +70,15 @@ const UserProfile: React.FC<UserProfileProps> = ({
             <Text className="text-gray-600 text-sm">Posts</Text>
           </View>
           <View className="items-center">
-            <Text className="text-2xl font-bold text-gray-900">0</Text>
+            <Text className="text-2xl font-bold text-gray-900">
+              {formatNumber(followers.length)}
+            </Text>
             <Text className="text-gray-600 text-sm">Followers</Text>
           </View>
           <View className="items-center">
-            <Text className="text-2xl font-bold text-gray-900">0</Text>
+            <Text className="text-2xl font-bold text-gray-900">
+              {formatNumber(following.length)}
+            </Text>
             <Text className="text-gray-600 text-sm">Following</Text>
           </View>
         </View>
@@ -74,4 +87,4 @@ const UserProfile: React.FC<UserProfileProps> = ({
   );
 };
 
-export default UserProfile; 
+export default UserProfile;

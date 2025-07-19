@@ -1,0 +1,59 @@
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { usePosts } from "@/hooks/usePosts";
+import { Post } from "@/types";
+import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
+import PostCard from "./PostCard";
+import React, { useState } from 'react';
+import CommentsModal from "./CommentsModal";
+import LoadingState from "./LoadingState";
+import ErrorState from "./ErrorState";
+
+const PostsList = ({ username }: { username?: string }) => {
+  const { currentUser } = useCurrentUser();
+  const { posts, isLoading, error, refetch, toggleLike, deletePost, checkIsLiked } =
+    usePosts(username);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+
+  const selectedPost = selectedPostId ? posts.find((p: Post) => p._id === selectedPostId) : null;
+
+  if (isLoading) {
+    return <LoadingState message="Loading posts..." />;
+  }
+
+  if (error) {
+    return (
+      <ErrorState 
+        message="Failed to load posts. Please check your connection and try again."
+        onRetry={refetch}
+      />
+    );
+  }
+
+  if (posts.length === 0) {
+    return (
+      <View className="p-8 items-center">
+        <Text className="text-gray-500">No posts yet</Text>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      {posts.map((post: Post) => (
+        <PostCard
+          key={post._id}
+          post={post}
+          onLike={toggleLike}
+          onDelete={deletePost}
+          onComment={(post: Post) => setSelectedPostId(post._id)}
+          currentUser={currentUser}
+          isLiked={checkIsLiked(post.likes, currentUser)}
+        />
+      ))}
+
+      <CommentsModal selectedPost={selectedPost} onClose={() => setSelectedPostId(null)} />
+    </>
+  );
+};
+
+export default PostsList;

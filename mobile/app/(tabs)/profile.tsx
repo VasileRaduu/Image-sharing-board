@@ -4,18 +4,21 @@ import SignOutButton from "@/components/SignOutButton";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { usePosts } from "@/hooks/usePosts";
 import { useProfile } from "@/hooks/useProfile";
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import {
   View,
   Text,
-  ActivityIndicator,
   ScrollView,
   Image,
   TouchableOpacity,
   RefreshControl,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { colors, spacing, shadows } from "../../utils/designSystem";
+import Avatar from "../../components/ui/Avatar";
+import Button from "../../components/ui/Button";
+import LoadingState from "../../components/LoadingState";
 
 const ProfileScreens = () => {
   const { currentUser, isLoading } = useCurrentUser();
@@ -25,7 +28,7 @@ const ProfileScreens = () => {
     posts: userPosts,
     refetch: refetchPosts,
     isLoading: isRefetching,
-  } = usePosts(currentUser?.username);
+  } = usePosts(currentUser?.userName);
 
   const {
     isEditModalVisible,
@@ -39,28 +42,25 @@ const ProfileScreens = () => {
   } = useProfile();
 
   if (isLoading) {
-    return (
-      <View className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#1DA1F2" />
-      </View>
-    );
+    return <LoadingState message="Loading profile..." />;
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={["top"]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.neutral[200] }}>
         <View>
-          <Text className="text-xl font-bold text-gray-900">
+          <Text style={{ fontSize: 20, fontWeight: '700' as const, color: colors.neutral[900] }}>
             {currentUser.firstName} {currentUser.lastName}
           </Text>
-          <Text className="text-gray-500 text-sm">{userPosts.length} Posts</Text>
+          <Text style={{ color: colors.neutral[500], fontSize: 14 }}>
+            {userPosts.length} Posts
+          </Text>
         </View>
         <SignOutButton />
       </View>
 
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -70,7 +70,7 @@ const ProfileScreens = () => {
               refetchProfile();
               refetchPosts();
             }}
-            tintColor="#1DA1F2"
+            tintColor={colors.primary[500]}
           />
         }
       >
@@ -80,64 +80,98 @@ const ProfileScreens = () => {
               currentUser.bannerImage ||
               "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop",
           }}
-          className="w-full h-48"
+          style={{ width: '100%', height: 200 }}
           resizeMode="cover"
         />
 
-        <View className="px-4 pb-4 border-b border-gray-100">
-          <View className="flex-row justify-between items-end -mt-16 mb-4">
-            <Image
-              source={{ uri: currentUser.profilePicture }}
-              className="w-32 h-32 rounded-full border-4 border-white"
+        <View style={{ padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.neutral[200] }}>
+          <View style={{ 
+            flexDirection: 'row', 
+            justifyContent: 'space-between', 
+            alignItems: 'flex-end',
+            marginTop: -64,
+            marginBottom: spacing.md 
+          }}>
+            <Avatar
+              source={currentUser.profilePicture}
+              size="2xl"
+              fallback={`${currentUser.firstName} ${currentUser.lastName}`}
+              style={{ 
+                borderWidth: 4, 
+                borderColor: 'white',
+                ...shadows.md 
+              }}
             />
-            <TouchableOpacity
-              className="border border-gray-300 px-6 py-2 rounded-full"
+            <Button
+              title="Edit Profile"
               onPress={openEditModal}
-            >
-              <Text className="font-semibold text-gray-900">Edit profile</Text>
-            </TouchableOpacity>
+              variant="outline"
+              size="small"
+            />
           </View>
 
-          <View className="mb-4">
-            <View className="flex-row items-center mb-1">
-              <Text className="text-xl font-bold text-gray-900 mr-1">
+          <View style={{ marginBottom: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
+              <Text style={{ 
+                fontSize: 20, 
+                fontWeight: '700' as const, 
+                color: colors.neutral[900], 
+                marginRight: spacing.xs 
+              }}>
                 {currentUser.firstName} {currentUser.lastName}
               </Text>
-              <Feather name="check-circle" size={20} color="#1DA1F2" />
+              <Ionicons name="checkmark-circle" size={20} color={colors.primary[500]} />
             </View>
-            <Text className="text-gray-500 mb-2">@{currentUser.username}</Text>
-            <Text className="text-gray-900 mb-3">{currentUser.bio}</Text>
+            <Text style={{ color: colors.neutral[500], marginBottom: spacing.sm }}>
+              @{currentUser?.userName}
+            </Text>
+            {currentUser.bio && (
+              <Text style={{ 
+                color: colors.neutral[900], 
+                marginBottom: spacing.md,
+                fontSize: 16,
+                lineHeight: 24 
+              }}>
+                {currentUser.bio}
+              </Text>
+            )}
 
-            <View className="flex-row items-center mb-2">
-              <Feather name="map-pin" size={16} color="#657786" />
-              <Text className="text-gray-500 ml-2">{currentUser.location}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+              <Ionicons name="location-outline" size={16} color={colors.neutral[500]} />
+              <Text style={{ color: colors.neutral[500], marginLeft: spacing.xs }}>
+                {currentUser.location || 'No location set'}
+              </Text>
             </View>
 
-            <View className="flex-row items-center mb-3">
-              <Feather name="calendar" size={16} color="#657786" />
-              <Text className="text-gray-500 ml-2">
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md }}>
+              <Ionicons name="calendar-outline" size={16} color={colors.neutral[500]} />
+              <Text style={{ color: colors.neutral[500], marginLeft: spacing.xs }}>
                 Joined {format(new Date(currentUser.createdAt), "MMMM yyyy")}
               </Text>
             </View>
 
-            <View className="flex-row">
-              <TouchableOpacity className="mr-6">
-                <Text className="text-gray-900">
-                  <Text className="font-bold">{currentUser.following?.length}</Text>
-                  <Text className="text-gray-500"> Following</Text>
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity style={{ marginRight: spacing.lg }}>
+                <Text style={{ color: colors.neutral[900] }}>
+                  <Text style={{ fontWeight: '700' as const }}>
+                    {currentUser.following?.length || 0}
+                  </Text>
+                  <Text style={{ color: colors.neutral[500] }}> Following</Text>
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity>
-                <Text className="text-gray-900">
-                  <Text className="font-bold">{currentUser.followers?.length}</Text>
-                  <Text className="text-gray-500"> Followers</Text>
+                <Text style={{ color: colors.neutral[900] }}>
+                  <Text style={{ fontWeight: '700' as const }}>
+                    {currentUser.followers?.length || 0}
+                  </Text>
+                  <Text style={{ color: colors.neutral[500] }}> Followers</Text>
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        <PostsList username={currentUser?.username} />
+        <PostsList username={currentUser?.userName} />
       </ScrollView>
 
       <EditProfileModal
