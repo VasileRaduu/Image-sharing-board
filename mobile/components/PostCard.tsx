@@ -79,11 +79,12 @@ const PostCard = ({ onDelete, onLike, post, isLiked, onComment, currentUser }: P
 								<Text className='text-gray-500 text-sm ml-2'>0</Text>
 							</TouchableOpacity>
 
-							<TouchableOpacity className='flex-row items-center' onPress={() => onLike(post._id)}> {isLiked ? (
-								<AntDesign name='heart' size={18} color="#E0245E" />
-							) : (
-								<Feather name='heart' size={18} color="#657786" />
-							)}
+							<TouchableOpacity className='flex-row items-center' onPress={() => onLike(post._id)}>
+								{isLiked ? (
+									<AntDesign name='heart' size={18} color="#E0245E" />
+								) : (
+									<Feather name='heart' size={18} color="#657786" />
+								)}
 								<Text className={`text-sm ml-2 ${isLiked ? "text-red-500" : "text-gray-500"}`}>
 									{formatNumber(post.likes?.length || 0)}
 								</Text>

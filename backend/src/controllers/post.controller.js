@@ -49,7 +49,7 @@ export const getUserPosts = asyncHandler(async (req, res) => {
 
 	const posts = await Post.find({ user: user._id })
 	.sort({ createdAt: -1 })
-	.populate("user", "username firstName lastName profilePicutre")
+	.populate("user", "username firstName lastName profilePicture")
 	.populate({
 		path: "comments",
 		populate: {

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useApiClient } from "../utils/api";
+import { compressImage, validateImage } from "../utils/imageCompression";
 
 export const useCreatePost = () => {
   const [content, setContent] = useState("");
@@ -73,7 +74,24 @@ export const useCreatePost = () => {
           mediaTypes: ["images"],
         });
 
-    if (!result.canceled) setSelectedImage(result.assets[0].uri);
+    if (!result.canceled) {
+      const imageUri = result.assets[0].uri;
+      
+      // Validate image format
+      if (!validateImage(imageUri)) {
+        Alert.alert("Invalid Image", "Please select a valid image file (JPG, PNG, GIF, or WebP)");
+        return;
+      }
+
+      // Compress image before setting
+      try {
+        const compressedImage = await compressImage(imageUri);
+        setSelectedImage(compressedImage.uri);
+      } catch (error) {
+        Alert.alert("Error", "Failed to process image. Please try again.");
+        console.error("Image compression error:", error);
+      }
+    }
   };
 
   const createPost = () => {

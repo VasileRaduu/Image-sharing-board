@@ -5,7 +5,10 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "https://pixly-ashy.verc
 
 
 export const createApiClient = (getToken: () => Promise<string | null>): AxiosInstance => {
-  const api = axios.create({ baseURL: API_BASE_URL });
+  const api = axios.create({ 
+    baseURL: API_BASE_URL,
+    timeout: 10000, // 10 second timeout
+  });
 
   api.interceptors.request.use(async (config) => {
     const token = await getToken();
@@ -14,6 +17,24 @@ export const createApiClient = (getToken: () => Promise<string | null>): AxiosIn
     }
     return config;
   });
+
+  // Response interceptor for better error handling
+  api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response) {
+        // Server responded with error status
+        console.error('API Error:', error.response.status, error.response.data);
+      } else if (error.request) {
+        // Network error
+        console.error('Network Error:', error.message);
+      } else {
+        // Other error
+        console.error('Request Error:', error.message);
+      }
+      return Promise.reject(error);
+    }
+  );
 
   return api;
 };
