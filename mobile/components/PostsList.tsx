@@ -5,6 +5,8 @@ import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
 import PostCard from "./PostCard";
 import React, { useState } from 'react';
 import CommentsModal from "./CommentsModal";
+import LoadingState from "./LoadingState";
+import ErrorState from "./ErrorState";
 
 const PostsList = ({ username }: { username?: string }) => {
   const { currentUser } = useCurrentUser();
@@ -15,22 +17,15 @@ const PostsList = ({ username }: { username?: string }) => {
   const selectedPost = selectedPostId ? posts.find((p: Post) => p._id === selectedPostId) : null;
 
   if (isLoading) {
-    return (
-      <View className="p-8 items-center">
-        <ActivityIndicator size="large" color="#1DA1F2" />
-        <Text className="text-gray-500 mt-2">Loading posts...</Text>
-      </View>
-    );
+    return <LoadingState message="Loading posts..." />;
   }
 
   if (error) {
     return (
-      <View className="p-8 items-center">
-        <Text className="text-gray-500 mb-4">Failed to load posts</Text>
-        <TouchableOpacity className="bg-blue-500 px-4 py-2 rounded-lg" onPress={() => refetch()}>
-          <Text className="text-white font-semibold">Retry</Text>
-        </TouchableOpacity>
-      </View>
+      <ErrorState 
+        message="Failed to load posts. Please check your connection and try again."
+        onRetry={refetch}
+      />
     );
   }
 
